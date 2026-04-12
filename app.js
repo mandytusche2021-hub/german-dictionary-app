@@ -19,12 +19,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const germanWordInput = document.getElementById('germanWord');
         const vietnameseMeaningInput = document.getElementById('vietnameseMeaning');
         const grammarNotesInput = document.getElementById('grammarNotes');
+        const exampleSentenceInput = document.getElementById('exampleSentence');
 
         const newWord = {
             id: Date.now().toString(),
             german: germanWordInput.value.trim(),
             vietnamese: vietnameseMeaningInput.value.trim(),
             grammar: grammarNotesInput.value.trim(),
+            example: exampleSentenceInput ? exampleSentenceInput.value.trim() : '',
             createdAt: new Date().toISOString()
         };
 
@@ -121,6 +123,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     </td>
                     <td class="px-6 py-4">
                         <div class="text-sm text-gray-500 italic">${escapeHTML(word.grammar) || '-'}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-sm text-gray-700">${word.example ? escapeHTML(word.example) : '-'}</div>
                     </td>
                     <td class="px-4 py-4 text-right">
                         <button class="delete-btn text-gray-300 hover:text-german-red transition-colors p-2 rounded opacity-0 group-hover:opacity-100 focus:opacity-100" data-id="${word.id}" aria-label="Delete word">
