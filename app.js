@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Load words from local storage
     let words = JSON.parse(localStorage.getItem('germanWords')) || [];
+    let editingWordId = null;
 
     // Initial render
     renderWords();
@@ -31,7 +32,19 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         if (newWord.german && newWord.vietnamese) {
-            words.unshift(newWord); // Add to beginning
+            if (editingWordId) {
+                const index = words.findIndex(w => w.id === editingWordId);
+                if (index !== -1) {
+                    words[index].german = newWord.german;
+                    words[index].vietnamese = newWord.vietnamese;
+                    words[index].grammar = newWord.grammar;
+                    words[index].example = newWord.example;
+                }
+                editingWordId = null;
+                form.querySelector('button[type="submit"] span').textContent = 'Speichern';
+            } else {
+                words.unshift(newWord); // Add to beginning
+            }
             saveWords();
             renderWords();
             
@@ -63,6 +76,27 @@ document.addEventListener('DOMContentLoaded', () => {
             words = words.filter(word => word.id !== idToDelete);
             saveWords();
             renderWords();
+            return;
+        }
+
+        const editBtn = e.target.closest('.edit-btn');
+        if (editBtn) {
+            const idToEdit = editBtn.dataset.id;
+            const wordToEdit = words.find(w => w.id === idToEdit);
+            if (wordToEdit) {
+                document.getElementById('germanWord').value = wordToEdit.german;
+                document.getElementById('vietnameseMeaning').value = wordToEdit.vietnamese;
+                document.getElementById('grammarNotes').value = wordToEdit.grammar || '';
+                document.getElementById('exampleSentence').value = wordToEdit.example || '';
+                
+                editingWordId = idToEdit;
+                
+                const submitBtnSpan = form.querySelector('button[type="submit"] span');
+                submitBtnSpan.textContent = 'Update';
+                
+                document.getElementById('germanWord').focus();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
             return;
         }
 
@@ -157,7 +191,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td class="px-6 py-4">
                         <div class="text-sm text-gray-700">${word.example ? escapeHTML(word.example) : '-'}</div>
                     </td>
-                    <td class="px-4 py-4 text-right">
+                    <td class="px-4 py-4 text-right whitespace-nowrap">
+                        <button class="edit-btn text-gray-300 hover:text-german-gold transition-colors p-2 rounded opacity-0 group-hover:opacity-100 focus:opacity-100 mr-1" data-id="${word.id}" aria-label="Edit word">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                        </button>
                         <button class="delete-btn text-gray-300 hover:text-german-red transition-colors p-2 rounded opacity-0 group-hover:opacity-100 focus:opacity-100" data-id="${word.id}" aria-label="Delete word">
                             <svg xmlns="http://www.w3.org/2000/svg" class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
