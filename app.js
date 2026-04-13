@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const wordCountLabel = document.getElementById('wordCountLabel');
     const searchInput = document.getElementById('searchInput');
     const exportBtn = document.getElementById('exportBtn');
+    const importBtn = document.getElementById('importBtn');
+    const importInput = document.getElementById('importInput');
 
     // Load words from local storage
     let words = JSON.parse(localStorage.getItem('germanWords')) || [];
@@ -138,6 +140,84 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.appendChild(downloadAnchorNode);
         downloadAnchorNode.click();
         downloadAnchorNode.remove();
+    });
+
+    // Import functionality
+    importBtn.addEventListener('click', () => {
+        importInput.click();
+    });
+
+    importInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const arrayBuffer = event.target.result;
+                
+                // If JSON file
+                if (file.name.endsWith('.json')) {
+                    const text = new TextDecoder().decode(arrayBuffer);
+                    const importedWords = JSON.parse(text);
+                    if (Array.isArray(importedWords)) {
+                        words = [...importedWords, ...words]; // Append at begging
+                        saveWords();
+                        renderWords();
+                        alert("JSON successfully imported!");
+                    }
+                    importInput.value = '';
+                    return;
+                }
+
+                // If Excel or CSV, use SheetJS
+                const data = new Uint8Array(arrayBuffer);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                
+                // Convert sheet to array of arrays
+                const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                
+                let importedCount = 0;
+                
+                // Row 1 is expected to be Headers (German, Vietnamese, Grammar, Example)
+                // We start reading at index 1 to skip headers
+                for (let i = 1; i < json.length; i++) {
+                    const row = json[i];
+                    // Ensure we have at least German and Vietnamese words
+                    if (!row || row.length < 2 || !row[0] || !row[1]) continue; 
+                    
+                    const newWord = {
+                        id: Date.now().toString() + Math.random().toString(36).substring(7),
+                        german: String(row[0]).trim(),
+                        vietnamese: String(row[1]).trim(),
+                        grammar: row[2] ? String(row[2]).trim() : '',
+                        example: row[3] ? String(row[3]).trim() : '',
+                        createdAt: new Date().toISOString()
+                    };
+                    
+                    words.unshift(newWord); // Add to the top
+                    importedCount++;
+                }
+
+                if (importedCount > 0) {
+                    saveWords();
+                    renderWords();
+                    alert(`Successfully imported ${importedCount} words from Excel!`);
+                } else {
+                    alert('No valid words found. Check your file format. Columns should be: German | Vietnamese | Grammar | Example.');
+                }
+
+            } catch (error) {
+                console.error(error);
+                alert('Error parsing file: ' + error.message);
+            }
+            
+            importInput.value = ''; // Reset input
+        };
+        
+        reader.readAsArrayBuffer(file);
     });
 
     function saveWords() {
